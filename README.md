@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Mountainfish Style Skill
 
 Claude Code 知识沉淀技能 - 自动收集、分析和应用编码经验。
@@ -104,7 +103,3 @@ Mountainfish_style_skill/
 - v1.2.0 - 自动注入功能
 - v1.1.0 - 代码风格分析
 - v1.0.0 - 初始版本
-=======
-# Mountainfish_style_skill
-Claude Code 知识沉淀技能 - 自动收集、分析和应用编码经验
->>>>>>> eda37c2358e4af0c52fa8afdbccfc96e4fd2cb3a
