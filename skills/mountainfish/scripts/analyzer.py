@@ -322,12 +322,32 @@ def print_report(report: Dict):
     print("\n" + "="*50)
 
 
+def _setup_encoding():
+    """修复 Windows 下 GBK 编码问题"""
+    if sys.platform == "win32":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+
 def main():
     """主函数"""
-    if len(sys.argv) < 2:
-        print("Usage: python analyzer.py <directory> [--json]")
-        print("Example: python analyzer.py ./src")
-        sys.exit(1)
+    _setup_encoding()
+    if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h", "help"):
+        print("Mountainfish Style Analyzer — 分析 C/C++ 代码风格特征")
+        print()
+        print("用法: python analyzer.py <directory> [--json]")
+        print()
+        print("参数:")
+        print("  <directory>   要分析的源码目录")
+        print("  --json        以 JSON 格式输出结果")
+        print()
+        print("示例:")
+        print("  python analyzer.py ./src")
+        print("  python analyzer.py ./src --json")
+        sys.exit(0)
 
     directory = sys.argv[1]
     json_output = '--json' in sys.argv

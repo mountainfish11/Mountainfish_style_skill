@@ -1,27 +1,39 @@
 # Mountainfish 记忆库索引
 
-> 此文件由系统自动维护，请勿手动编辑
+> 运行 `python scripts/health-check.py --update-index` 自动刷新统计
 
-## 统计
+## 分层统计
 
-- 代码风格：0 条
-- 设计模式：1 条
-- 避坑指南：0 条
-- 技术栈偏好：0 条
-- 项目结构：0 条
-- 其他约定：0 条
+| 层级 | 数量 | 上限 | 状态 |
+|------|------|------|------|
+| 铁律 Rules | 0 | 5 | ⚪ |
+| 指南 Guidelines | 5 | 20 | 🟢 |
+| 参考 Reference | 0 | 无上限 | ⚪ |
+| **总计** | **5** | — | — |
+
+## 分类统计
+
+| 分类 | 铁律 | 指南 | 参考 | 合计 |
+|------|------|------|------|------|
+| code-style | 0 | 2 | 0 | 2 |
+| patterns | 0 | 1 | 0 | 1 |
+| anti-patterns | 0 | 1 | 0 | 1 |
+| tech-stack | 0 | 1 | 0 | 1 |
+| project-structure | 0 | 0 | 0 | 0 |
+| conventions | 0 | 0 | 0 | 0 |
 
 ## 最近更新
 
-- 2026-07-03: 添加"参数传递优于全局变量"设计模式
+- 2026-07-03: 添加"参数传递优于全局变量"（指南 · patterns）
+- 2026-07-03: 记忆系统架构升级至 v2.0（三级分层）
 
 ## 文件列表
 
-| 文件 | 说明 | 状态 |
-|------|------|------|
-| code-style.md | 代码风格规范 | 空 |
-| patterns.md | 设计模式和最佳实践 | 1 条 |
-| anti-patterns.md | 需要避免的写法 | 空 |
-| tech-stack.md | 技术栈偏好 | 空 |
-| project-structure.md | 项目结构偏好 | 空 |
-| conventions.md | 其他约定 | 空 |
+| 文件 | 说明 |
+|------|------|
+| [code-style.md](./code-style.md) | 代码风格规范 |
+| [patterns.md](./patterns.md) | 设计模式和最佳实践 |
+| [anti-patterns.md](./anti-patterns.md) | 需要避免的写法 |
+| [tech-stack.md](./tech-stack.md) | 技术栈偏好 |
+| [project-structure.md](./project-structure.md) | 项目结构偏好 |
+| [conventions.md](./conventions.md) | 其他约定 |

@@ -243,12 +243,32 @@ def map_brace_to_clang(brace_style: str) -> str:
     return mapping.get(brace_style, 'Attach')
 
 
+def _setup_encoding():
+    """修复 Windows 下 GBK 编码问题"""
+    if sys.platform == "win32":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+
 def main():
     """主函数"""
-    if len(sys.argv) < 2:
+    _setup_encoding()
+    if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h", "help"):
+        print("Mountainfish Profile Generator — 根据分析结果生成 mf_style.yaml 和 .clang-format")
+        print()
         print("用法: python profile_generator.py <报告JSON文件> [--clang-format]")
-        print("示例: python profile_generator.py report.json --clang-format")
-        sys.exit(1)
+        print()
+        print("参数:")
+        print("  <报告JSON文件>   由 analyzer.py --json 输出的 JSON 报告文件")
+        print("  --clang-format   同时生成 .clang-format 文件")
+        print()
+        print("示例:")
+        print("  python profile_generator.py report.json")
+        print("  python profile_generator.py report.json --clang-format")
+        sys.exit(0)
 
     report_file = sys.argv[1]
     generate_clang = '--clang-format' in sys.argv
