@@ -109,9 +109,35 @@
 
 ---
 
-### Step A: 代码分析模式
+### Step A: 代码分析模式（v2.1 优化：脚本调用）
 
-同 v1.x，使用 `scripts/analyzer.py` 和 `scripts/profile_generator.py`。
+**必须使用 Bash 工具**调用 analyzer.py 脚本，不要手动读源文件做分析：
+
+```bash
+# 分析代码风格（终端输出）
+python skills/mountainfish/scripts/analyzer.py <源码目录>
+
+# JSON 输出
+python skills/mountainfish/scripts/analyzer.py <源码目录> --json
+```
+
+脚本自动完成：
+- 缩进风格检测（tab/2空格/4空格）
+- 大括号风格检测（K&R/Allman）
+- 命名规范分析（snake_case/camelCase/PascalCase/UPPER_SNAKE_CASE）
+- 注释风格统计
+
+如需生成 `mf_style.yaml` 或 `.clang-format`：
+
+```bash
+# 先获取 JSON 报告
+python skills/mountainfish/scripts/analyzer.py <源码目录> --json > /tmp/mf-style.json
+
+# 生成配置
+python skills/mountainfish/scripts/profile_generator.py /tmp/mf-style.json --clang-format
+```
+
+Claude 负责解读 JSON 结果并生成人类可读报告。
 
 ---
 
@@ -129,14 +155,33 @@
 
 ---
 
-### Step H: 记忆健康检查（v2.0 新增）
+### Step H: 记忆健康检查（v2.1 优化：脚本调用）
 
 ```
 /mountainfish_integrate --health          # 快速模式：矛盾 + 过期 + 铁律膨胀
 /mountainfish_integrate --health --full   # 全面审计：全部 5 维
 ```
 
-**检查维度：**
+**必须使用 Bash 工具**调用 health-check.py 脚本，不要手动分析记忆库：
+
+```bash
+# 快速检查（终端输出）
+python skills/mountainfish/scripts/health-check.py
+
+# 全面审计
+python skills/mountainfish/scripts/health-check.py --full
+
+# JSON 输出
+python skills/mountainfish/scripts/health-check.py --full --json
+
+# 审计后自动刷新 index.md 统计
+python skills/mountainfish/scripts/health-check.py --update-index
+
+# 指定记忆库目录
+python skills/mountainfish/scripts/health-check.py --memory-dir <path>
+```
+
+脚本自动完成 5 维检查：
 
 | 维度 | 检测内容 | 快速 | 全面 |
 |------|----------|------|------|
@@ -145,6 +190,8 @@
 | 铁律膨胀 | 铁律超过 5 条 | ✅ | ✅ |
 | 孤立条目 | 参考条目零引用 + 无索引 | — | ✅ |
 | 重复内容 | 两个条目覆盖同一主题无互相引用 | — | ✅ |
+
+Claude 负责解读 JSON/终端输出并生成人类可读报告。
 
 **输出格式：**
 
@@ -185,3 +232,14 @@
 
 ✅ 已更新记忆库
 ```
+
+## 注意事项
+
+- 记忆库文件可手动编辑，但建议通过 integrate 命令沉淀
+- 不执行记忆中的代码，仅作为参考
+- 建议定期运行 `/mountainfish_integrate --health` 检查记忆健康
+- **[v2.1] 不要手动读源文件或记忆库文件做分析**，必须通过对应脚本处理：
+  - 健康检查 → `health-check.py`
+  - 代码风格分析 → `analyzer.py`
+  - 记忆加载/过滤 → `memory-loader.py`
+  - 项目画像 → `profiler.py`

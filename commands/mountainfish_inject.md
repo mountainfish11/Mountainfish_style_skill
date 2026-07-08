@@ -33,34 +33,48 @@
 /mountainfish_inject --tier guideline code-style        # 指南中的代码风格
 ```
 
-## 手动模式执行流程
+## 手动模式执行流程（v2.1 优化：脚本预处理）
+
+> **核心原则**：记忆解析和过滤由 Python 脚本完成，Claude 仅负责展示结果。
 
 ### Step 1: 确定注入范围
 
-根据用户参数确定注入范围：
+根据用户参数构建脚本参数：
 
-- **无参数**：按三级分层注入全部（铁律全部 + 指南摘要 + 参考 Top-5，≤ 3000 token）
-- **分类参数**：按分类注入对应层级的经验
-- **--tier 参数**：只注入指定层级
-- **组合参数**：取交集
+| 用户输入 | 脚本参数 |
+|----------|----------|
+| 无参数 | `--mode inject`（全部） |
+| `code-style` | `--mode inject --category code-style` |
+| `--tier rule` | `--mode inject --tier rule` |
+| `--tier guideline code-style` | `--mode inject --tier guideline --category code-style` |
 
-### Step 2: 读取记忆库
+### Step 2: 调用 memory-loader 脚本
 
-根据注入范围，从对应记忆库文件中按层级读取：
+**必须使用 Bash 工具**调用脚本：
 
+```bash
+# 全部注入
+python skills/mountainfish/scripts/memory-loader.py --mode inject
+
+# 按层级过滤
+python skills/mountainfish/scripts/memory-loader.py --mode inject --tier rule
+
+# 按分类过滤
+python skills/mountainfish/scripts/memory-loader.py --mode inject --category patterns
+
+# 组合过滤
+python skills/mountainfish/scripts/memory-loader.py --mode inject --tier guideline --category code-style
+
+# 按标签过滤
+python skills/mountainfish/scripts/memory-loader.py --mode inject --tags "C,嵌入式"
+
+# JSON 输出（用于程序化处理）
+python skills/mountainfish/scripts/memory-loader.py --mode inject --tier rule --json
 ```
-~/.claude/skills/mountainfish/memory/
-├── code-style.md         # 铁律 / 指南 / 参考
-├── patterns.md           # 铁律 / 指南 / 参考
-├── anti-patterns.md      # 铁律 / 指南 / 参考
-├── tech-stack.md         # 铁律 / 指南 / 参考
-├── project-structure.md  # 铁律 / 指南 / 参考
-└── conventions.md        # 铁律 / 指南 / 参考
-```
 
-### Step 3: 注入到上下文
+### Step 3: 展示注入结果
 
-分层展示注入结果：
+将脚本输出直接展示给用户：
 
 ```
 === Mountainfish Inject 完成 ===
@@ -90,8 +104,8 @@ token 用量: ~XXXX / 3000
 
 当 SKILL.md 的触发条件匹配时（用户讨论代码相关话题），skill 会自动：
 1. 检查是否已完成 `start` 全量加载
-2. 如未加载 → 先加载铁律 + 指南摘要
-3. 按标签/关键词检索指南全文 + 参考条目
+2. 如未加载 → 先执行 `/mountainfish_start`
+3. 按标签/关键词调用 memory-loader.py 检索指南全文 + 参考条目
 4. Top-K（≤5 条），token 上限 1500
 5. 简提示：`💡 Mountainfish: 铁律 X 条 | 指南 X 条 | 参考 X 条`
 
@@ -101,3 +115,4 @@ token 用量: ~XXXX / 3000
 - 不会修改实际代码，仅作为生成参考
 - 如需永久更新经验，使用 `/mountainfish_integrate`
 - 手动注入不会覆盖已加载的铁律（铁律始终生效）
+- **[v2.1] 不要手动读 memory 文件**，必须通过 memory-loader.py 脚本处理

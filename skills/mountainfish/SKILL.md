@@ -26,12 +26,25 @@ version: 2.1.0
 
 ## 核心功能
 
-| 命令 | 用途 |
-|------|------|
-| `/mountainfish_start` | 会话启动时分层加载记忆 |
-| `/mountainfish_inject` | 手动精确注入指定经验 |
-| `/mountainfish_integrate` | 沉淀经验到记忆库（支持分类） |
-| `/mountainfish_profiling` | 分析项目惯用写法，输出风格画像 |
+| 命令 | 用途 | 核心脚本 |
+|------|------|----------|
+| `/mountainfish_start` | 会话启动时分层加载记忆 | `memory-loader.py` |
+| `/mountainfish_inject` | 手动精确注入指定经验 | `memory-loader.py` |
+| `/mountainfish_integrate` | 沉淀经验到记忆库（支持分类） | `health-check.py` / `analyzer.py` |
+| `/mountainfish_profiling` | 分析项目惯用写法，输出风格画像 | `profiler.py` |
+
+## v2.1 Token 优化
+
+所有命令的正则分析/记忆解析由 Python 脚本完成，Claude 仅负责解读结果和生成报告。
+
+| 命令 | 优化前 | 优化后 | 节省 |
+|------|--------|--------|------|
+| `profiling` (50 文件) | ~40k token | ~3k token | 92% |
+| `start` | ~5k token | ~500 token | 90% |
+| `inject` | ~8k token | ~1k token | 87% |
+| `integrate --health` | ~3k token | ~500 token | 83% |
+
+**原则**：不要手动读源文件或记忆库文件做分析，必须通过对应脚本处理。
 
 ## 记忆库结构（v2.0 三级分层）
 
