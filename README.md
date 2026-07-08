@@ -6,7 +6,8 @@ Claude Code 知识沉淀技能 - 自动收集、分析和应用编码经验。
 
 | 版本 | 日期 | 主题 |
 |------|------|------|
-| **v2.1.0** | 2026-07-03 | 代码画像 /profiling + --compare 跨项目训练 |
+| **v2.1.1** | 2026-07-08 | Token 优化：所有命令改用脚本预处理 |
+| v2.1.0 | 2026-07-03 | 代码画像 /profiling + --compare 跨项目训练 |
 | v2.0.0 | 2026-07-03 | 记忆分层架构 · 冲突裁决 · 验证门禁 · 健康审计 |
 | v1.2.0 | — | 自动注入 |
 | v1.1.0 | — | 代码风格分析 |
@@ -17,6 +18,7 @@ Claude Code 知识沉淀技能 - 自动收集、分析和应用编码经验。
 | 功能 | 说明 |
 |------|------|
 | 三级分层注入 | 铁律(≤5)·指南(≤20)·参考(无上限)，上下文 ≤2800 token |
+| **脚本预处理**（v2.1.1） | 所有命令改用 Python 脚本分析，token 节省 83-92% |
 | **代码画像**（v2.1） | 分析项目惯用写法 + 跨项目对比 + 输出可沉淀经验条目 |
 | 任务后钩子 | 代码生成后自动扫描违规（最多 1 条） |
 | 机械门禁 | check-style.py exit code 强制验证 |
@@ -60,12 +62,13 @@ Mountainfish_style_skill/
 │           ├── profile_generator.py   # 配置生成器
 │           ├── check-style.py         # [v2.0] 机械门禁：命名 / 反模式 / 技术栈检查
 │           ├── health-check.py        # [v2.0] 健康审计：5 维检查 + --update-index
-│           └── profiler.py            # [v2.1] 代码画像：惯用写法检测 + 跨项目对比
+│           ├── profiler.py            # [v2.1] 代码画像：惯用写法检测 + 跨项目对比
+│           └── memory-loader.py      # [v2.1.1] 记忆库分层加载：start/inject + 过滤
 └── commands/
     ├── mountainfish_integrate.md      # [v2.0] 经验沉淀（+ --type --tier --health）
-    ├── mountainfish_start.md          # [v2.0] 分层加载启动
-    ├── mountainfish_inject.md         # [v2.0] 手动精确注入（+ --tier --category）
-    └── mountainfish_profiling.md      # [v2.1] 代码画像（惯用写法 + --compare）
+    ├── mountainfish_start.md          # [v2.1.1] 分层加载启动（调用 memory-loader.py）
+    ├── mountainfish_inject.md         # [v2.1.1] 手动精确注入（调用 memory-loader.py + 过滤）
+    └── mountainfish_profiling.md      # [v2.1.1] 代码画像（调用 profiler.py）
 ```
 
 ## 使用方式
@@ -183,6 +186,43 @@ python skills/mountainfish/scripts/profiler.py ./src --json
 | D10 | 代码画像 | profiling 先分类后分析 + 定量统计 + 缺失清单（吸收 auto-embedded 启示） |
 
 ## 版本日志
+
+### v2.1.1 — Token 优化：所有命令改用脚本预处理 (2026-07-08)
+
+**背景**：v2.1.0 的 profiling 命令虽然功能完整，但让 Claude 亲自读每个源文件做正则匹配，token 消耗 = O(文件数 × 模式数)。进一步审查发现 start / inject / integrate 命令也存在类似问题——Claude 手动读取 6 个 memory 文件做解析，而非调用已有脚本。
+
+**核心变更**：
+
+- **所有命令改为脚本预处理**：正则分析/记忆解析由 Python 脚本完成，Claude 仅负责解读 JSON 结果和生成报告
+- **新增 `memory-loader.py`**：记忆库分层加载脚本，支持 `--mode start`（铁律全文 + 指南摘要 + 参考索引）和 `--mode inject`（按 tier/category/tags 过滤），输出 JSON 或格式化文本
+- **profiling → `profiler.py`**：命令定义改为调用已有脚本，不手动读源文件
+- **start → `memory-loader.py --mode start`**：从 6 个 memory 文件中按层级提取，替代 Claude 逐文件读取
+- **inject → `memory-loader.py --mode inject`**：支持 `--tier` / `--category` / `--tags` 过滤参数
+- **integrate --health → `health-check.py`**：引用已有脚本，不手动分析记忆库
+- **integrate --analyze → `analyzer.py`**：引用已有脚本，不手动读源文件
+
+**Token 节省**：
+
+| 命令 | 优化前 | 优化后 | 节省 |
+|------|--------|--------|------|
+| `profiling` (50 文件) | ~40k token | ~3k token | **92%** |
+| `start` | ~5k token | ~500 token | **90%** |
+| `inject` | ~8k token | ~1k token | **87%** |
+| `integrate --health` | ~3k token | ~500 token | **83%** |
+
+**新增文件**：
+- `scripts/memory-loader.py` — 记忆库分层加载脚本（~250 行）
+
+**修改文件**（5 个）：
+- `commands/mountainfish_profiling.md` — 流程改为调用 profiler.py
+- `commands/mountainfish_start.md` — 重写为调用 memory-loader.py
+- `commands/mountainfish_inject.md` — 重写为调用 memory-loader.py
+- `commands/mountainfish_integrate.md` — Step H 引用 health-check.py，Step A 引用 analyzer.py
+- `SKILL.md` — 版本号更新，新增 token 优化对照表
+
+**设计原则**：不要手动读源文件或记忆库文件做分析，必须通过对应脚本处理。
+
+---
 
 ### v2.1.0 — 代码画像 + 跨项目训练 (2026-07-03)
 
