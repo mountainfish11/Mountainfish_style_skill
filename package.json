@@ -1,0 +1,42 @@
+{
+  "name": "mountainfish-skill",
+  "version": "2.1.2",
+  "description": "Mountainfish - Claude Code knowledge accumulation skill for encoding experience",
+  "main": "index.js",
+  "bin": {
+    "mountainfish": "bin/mountainfish.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/mountainfish/SKILL.md",
+    "skills/mountainfish/memory/",
+    "skills/mountainfish/scripts/*.py",
+    "commands/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "node bin/mountainfish.js install --silent"
+  },
+  "keywords": [
+    "claude-code",
+    "skill",
+    "knowledge",
+    "coding-style",
+    "memory"
+  ],
+  "author": "mountainfish",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mountainfish11/Mountainfish_style_skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mountainfish11/Mountainfish_style_skill/issues"
+  },
+  "homepage": "https://github.com/mountainfish11/Mountainfish_style_skill#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -33,10 +33,10 @@
 
 ```bash
 # 单项目分析 — JSON 输出到临时文件
-python skills/mountainfish/scripts/profiler.py <源码目录> --json > /tmp/mf-profile.json
+python ~/.claude/skills/mountainfish/scripts/profiler.py <源码目录> --json > /tmp/mf-profile.json
 
 # 跨项目对比
-python skills/mountainfish/scripts/profiler.py --compare <profile1.md> <profile2.md> --json > /tmp/mf-compare.json
+python ~/.claude/skills/mountainfish/scripts/profiler.py --compare <profile1.md> <profile2.md> --json > /tmp/mf-compare.json
 ```
 
 脚本自动完成：

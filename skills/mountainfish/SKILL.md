@@ -17,7 +17,7 @@ description: |
     - 用户提到目录结构、模块划分、文件组织
     - 用户说 "分析项目风格"、"代码画像"、"profiling"、"看看这个项目的写法"、"提取代码模式"
   DO NOT TRIGGER when: 无关任务（如文档翻译、纯数学计算等）
-version: 2.1.0
+version: 2.1.2
 ---
 
 # Mountainfish Skill

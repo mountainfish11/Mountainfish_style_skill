@@ -115,10 +115,10 @@
 
 ```bash
 # 分析代码风格（终端输出）
-python skills/mountainfish/scripts/analyzer.py <源码目录>
+python ~/.claude/skills/mountainfish/scripts/analyzer.py <源码目录>
 
 # JSON 输出
-python skills/mountainfish/scripts/analyzer.py <源码目录> --json
+python ~/.claude/skills/mountainfish/scripts/analyzer.py <源码目录> --json
 ```
 
 脚本自动完成：
@@ -131,10 +131,10 @@ python skills/mountainfish/scripts/analyzer.py <源码目录> --json
 
 ```bash
 # 先获取 JSON 报告
-python skills/mountainfish/scripts/analyzer.py <源码目录> --json > /tmp/mf-style.json
+python ~/.claude/skills/mountainfish/scripts/analyzer.py <源码目录> --json > /tmp/mf-style.json
 
 # 生成配置
-python skills/mountainfish/scripts/profile_generator.py /tmp/mf-style.json --clang-format
+python ~/.claude/skills/mountainfish/scripts/profile_generator.py /tmp/mf-style.json --clang-format
 ```
 
 Claude 负责解读 JSON 结果并生成人类可读报告。
@@ -166,19 +166,19 @@ Claude 负责解读 JSON 结果并生成人类可读报告。
 
 ```bash
 # 快速检查（终端输出）
-python skills/mountainfish/scripts/health-check.py
+python ~/.claude/skills/mountainfish/scripts/health-check.py
 
 # 全面审计
-python skills/mountainfish/scripts/health-check.py --full
+python ~/.claude/skills/mountainfish/scripts/health-check.py --full
 
 # JSON 输出
-python skills/mountainfish/scripts/health-check.py --full --json
+python ~/.claude/skills/mountainfish/scripts/health-check.py --full --json
 
 # 审计后自动刷新 index.md 统计
-python skills/mountainfish/scripts/health-check.py --update-index
+python ~/.claude/skills/mountainfish/scripts/health-check.py --update-index
 
 # 指定记忆库目录
-python skills/mountainfish/scripts/health-check.py --memory-dir <path>
+python ~/.claude/skills/mountainfish/scripts/health-check.py --memory-dir <path>
 ```
 
 脚本自动完成 5 维检查：

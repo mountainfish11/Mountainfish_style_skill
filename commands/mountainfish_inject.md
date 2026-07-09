@@ -54,22 +54,22 @@
 
 ```bash
 # 全部注入
-python skills/mountainfish/scripts/memory-loader.py --mode inject
+python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject
 
 # 按层级过滤
-python skills/mountainfish/scripts/memory-loader.py --mode inject --tier rule
+python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject --tier rule
 
 # 按分类过滤
-python skills/mountainfish/scripts/memory-loader.py --mode inject --category patterns
+python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject --category patterns
 
 # 组合过滤
-python skills/mountainfish/scripts/memory-loader.py --mode inject --tier guideline --category code-style
+python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject --tier guideline --category code-style
 
 # 按标签过滤
-python skills/mountainfish/scripts/memory-loader.py --mode inject --tags "C,嵌入式"
+python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject --tags "C,嵌入式"
 
 # JSON 输出（用于程序化处理）
-python skills/mountainfish/scripts/memory-loader.py --mode inject --tier rule --json
+python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject --tier rule --json
 ```
 
 ### Step 3: 展示注入结果

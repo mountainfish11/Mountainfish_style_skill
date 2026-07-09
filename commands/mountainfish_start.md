@@ -18,7 +18,7 @@
 **必须使用 Bash 工具**调用脚本：
 
 ```bash
-python skills/mountainfish/scripts/memory-loader.py --mode start
+python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode start
 ```
 
 脚本自动完成：

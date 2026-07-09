@@ -6,7 +6,8 @@ Claude Code 知识沉淀技能 - 自动收集、分析和应用编码经验。
 
 | 版本 | 日期 | 主题 |
 |------|------|------|
-| **v2.1.1** | 2026-07-08 | Token 优化：所有命令改用脚本预处理 |
+| **v2.1.2** | 2026-07-09 | npm 一键安装：`npm install -g mountainfish-skill` |
+| v2.1.1 | 2026-07-08 | Token 优化：所有命令改用脚本预处理 |
 | v2.1.0 | 2026-07-03 | 代码画像 /profiling + --compare 跨项目训练 |
 | v2.0.0 | 2026-07-03 | 记忆分层架构 · 冲突裁决 · 验证门禁 · 健康审计 |
 | v1.2.0 | — | 自动注入 |
@@ -30,7 +31,20 @@ Claude Code 知识沉淀技能 - 自动收集、分析和应用编码经验。
 
 ## 安装
 
-将文件复制到 Claude Code 配置目录：
+### 方式一：npm 一键安装（推荐）
+
+```bash
+npm install -g mountainfish-skill
+```
+
+安装后自动部署到 `~/.claude/`，可用以下命令管理：
+
+```bash
+mountainfish status     # 检查安装状态
+mountainfish uninstall  # 卸载
+```
+
+### 方式二：手动复制
 
 ```bash
 # 复制 skill 文件
@@ -186,6 +200,38 @@ python skills/mountainfish/scripts/profiler.py ./src --json
 | D10 | 代码画像 | profiling 先分类后分析 + 定量统计 + 缺失清单（吸收 auto-embedded 启示） |
 
 ## 版本日志
+
+### v2.1.2 — npm 一键安装 (2026-07-09)
+
+**背景**：之前安装需要手动 `cp` 文件到 `~/.claude/`，每次更新都要重新复制。改为 npm 包方式分发，一行命令完成安装部署。
+
+**核心变更**：
+
+- **npm 包发布**：`npm install -g mountainfish-skill` 一键安装
+- **CLI 命令**：安装后提供 `mountainfish` 命令，支持 `install` / `uninstall` / `status`
+- **自动部署**：`postinstall` 钩子自动复制到 `~/.claude/commands/` 和 `~/.claude/skills/`
+- **路径修复**：命令中脚本路径改为 `~/.claude/` 绝对路径，支持任意项目使用
+
+**新增文件**：
+- `package.json` — npm 包配置
+- `bin/mountainfish.js` — CLI 入口
+- `lib/installer.js` — 安装/卸载逻辑
+- `LICENSE` — MIT 许可证
+- `.npmignore` — 排除 `__pycache__` 等
+
+**使用方式**：
+```bash
+# 安装
+npm install -g mountainfish-skill
+
+# 检查状态
+mountainfish status
+
+# 卸载
+mountainfish uninstall
+```
+
+---
 
 ### v2.1.1 — Token 优化：所有命令改用脚本预处理 (2026-07-08)
 
