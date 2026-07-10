@@ -6,6 +6,7 @@ Claude Code 知识沉淀技能 - 自动收集、分析和应用编码经验。
 
 | 版本 | 日期 | 主题 |
 |------|------|------|
+| **v2.2.0** | 2026-07-10 | reference/ 外部经验目录：来源分离 + 代码标注 |
 | **v2.1.2** | 2026-07-09 | npm 一键安装：`npm install -g mountainfish-skill` |
 | v2.1.1 | 2026-07-08 | Token 优化：所有命令改用脚本预处理 |
 | v2.1.0 | 2026-07-03 | 代码画像 /profiling + --compare 跨项目训练 |
@@ -19,6 +20,8 @@ Claude Code 知识沉淀技能 - 自动收集、分析和应用编码经验。
 | 功能 | 说明 |
 |------|------|
 | 三级分层注入 | 铁律(≤5)·指南(≤20)·参考(无上限)，上下文 ≤2800 token |
+| **来源分离**（v2.2） | memory/（自己的经验） + reference/（外部经验），来源标注 [自]/[外] |
+| **代码标注**（v2.2） | 生成代码时标注经验来源：`/* 💡 经验: [外] — 描述 */` |
 | **脚本预处理**（v2.1.1） | 所有命令改用 Python 脚本分析，token 节省 83-92% |
 | **代码画像**（v2.1） | 分析项目惯用写法 + 跨项目对比 + 输出可沉淀经验条目 |
 | 任务后钩子 | 代码生成后自动扫描违规（最多 1 条） |
@@ -63,7 +66,7 @@ Mountainfish_style_skill/
 ├── skills/
 │   └── mountainfish/
 │       ├── SKILL.md                   # Skill 主文件（v2.0 三级分层注入 + 任务后钩子）
-│       ├── memory/                    # 记忆库（v2.0 三级分层）
+│       ├── memory/                    # 自己的经验（v2.0 三级分层）
 │       │   ├── index.md               # 分层索引（统计 + 摘要）
 │       │   ├── code-style.md          # 代码风格（铁律 / 指南 / 参考）
 │       │   ├── patterns.md            # 设计模式（铁律 / 指南 / 参考）
@@ -71,6 +74,14 @@ Mountainfish_style_skill/
 │       │   ├── tech-stack.md          # 技术栈（铁律 / 指南 / 参考）
 │       │   ├── project-structure.md   # 项目结构（铁律 / 指南 / 参考）
 │       │   └── conventions.md         # 其他约定（铁律 / 指南 / 参考）
+│       ├── reference/                 # 外部经验（v2.2 新增，无铁律）
+│       │   ├── index.md               # 外部经验索引
+│       │   ├── code-style.md          # 代码风格（指南 / 参考）
+│       │   ├── patterns.md            # 设计模式（指南 / 参考）
+│       │   ├── anti-patterns.md       # 避坑指南（指南 / 参考）
+│       │   ├── tech-stack.md          # 技术栈（指南 / 参考）
+│       │   ├── project-structure.md   # 项目结构（指南 / 参考）
+│       │   └── conventions.md         # 其他约定（指南 / 参考）
 │       └── scripts/
 │           ├── analyzer.py            # 代码风格分析器
 │           ├── profile_generator.py   # 配置生成器
@@ -157,7 +168,16 @@ python skills/mountainfish/scripts/profiler.py ./src --json
 
 ## 记忆库管理
 
-记忆库位于 `skills/mountainfish/memory/`，采用 **v2.0 三级分层架构**：
+记忆库位于 `skills/mountainfish/memory/`（自己的经验）和 `skills/mountainfish/reference/`（外部经验），采用 **v2.2 三级分层 + 来源分离架构**：
+
+**来源分离**（v2.2）：
+
+| 目录 | 来源 | 铁律 | 指南 | 参考 |
+|------|------|------|------|------|
+| `memory/` | 自己的代码经验 | ✅ 支持 | ✅ | ✅ |
+| `reference/` | 别人的代码经验 | ❌ 不支持 | ✅ | ✅ |
+
+**三级分层**：
 
 | 层级 | 数量上限 | 注入时机 | 示例 |
 |------|----------|----------|------|
@@ -200,6 +220,41 @@ python skills/mountainfish/scripts/profiler.py ./src --json
 | D10 | 代码画像 | profiling 先分类后分析 + 定量统计 + 缺失清单（吸收 auto-embedded 启示） |
 
 ## 版本日志
+
+### v2.2.0 — reference/ 外部经验目录 + 来源分离 (2026-07-10)
+
+**背景**：用户不仅需要沉淀自己的编码经验，也需要从别人优秀代码中学习。v2.1.x 的记忆库只有 memory/ 目录，自己的经验和别人的经验混在一起，缺乏来源区分。
+
+**核心变更**：
+
+- **新增 `reference/` 目录**：与 `memory/` 平级，7 个模板文件，专门存放从别人代码中学到的经验
+- **来源分离**：memory/ 存放自己的经验（支持铁律/指南/参考），reference/ 存放外部经验（最高层级为指南）
+- **Profiling 来源询问**：`/mountainfish_profiling` 新增 Step 0，询问"自己的项目还是别人的项目？"
+- **`--source` 参数**：profiler.py、memory-loader.py、integrate/inject/start 命令均支持 `--source own|reference|both`
+- **代码经验标注**：生成代码时如使用了经验，关键位置标注 `/* 💡 经验: [自]/[外] — 描述 */`
+- **目录部署**：installer.js 处理 reference/ 的安装/卸载/状态
+
+**新增文件**（7 个）：
+- `skills/mountainfish/reference/index.md` — 外部经验索引和统计
+- `skills/mountainfish/reference/code-style.md` — 外部代码风格参考
+- `skills/mountainfish/reference/patterns.md` — 外部设计模式参考
+- `skills/mountainfish/reference/anti-patterns.md` — 外部反模式案例
+- `skills/mountainfish/reference/tech-stack.md` — 外部技术栈参考
+- `skills/mountainfish/reference/project-structure.md` — 外部项目结构参考
+- `skills/mountainfish/reference/conventions.md` — 外部其他约定参考
+
+**修改文件**（9 个）：
+- `profiler.py` — 新增 `--source own|reference`
+- `memory-loader.py` — 新增 `--source memory|reference|both`，条目新增 `source` 字段
+- `mountainfish_profiling.md` — 新增 Step 0 询问来源
+- `mountainfish_integrate.md` — 支持 `--source reference`，自动限制层级
+- `mountainfish_start.md` — 改为 `--source both`，外部经验标注 `[外部]`
+- `mountainfish_inject.md` — 新增 `--source` 参数
+- `SKILL.md` — 更新记忆库结构、冲突优先级、代码标注规则
+- `installer.js` — 处理 reference/ 安装/卸载/状态
+- `package.json` — files 白名单添加 reference/
+
+---
 
 ### v2.1.2 — npm 一键安装 (2026-07-09)
 

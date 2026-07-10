@@ -1,6 +1,6 @@
 {
   "name": "mountainfish-skill",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "Mountainfish - Claude Code knowledge accumulation skill for encoding experience",
   "main": "index.js",
   "bin": {
