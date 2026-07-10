@@ -31,6 +31,10 @@
 # 组合筛选
 /mountainfish_inject --tier rule --category patterns   # 铁律中的设计模式
 /mountainfish_inject --tier guideline code-style        # 指南中的代码风格
+
+# 指定来源（v2.2 新增）
+/mountainfish_inject --source reference                 # 仅注入外部经验
+/mountainfish_inject --source both                      # 同时注入自己的 + 外部经验
 ```
 
 ## 手动模式执行流程（v2.1 优化：脚本预处理）
@@ -43,9 +47,10 @@
 
 | 用户输入 | 脚本参数 |
 |----------|----------|
-| 无参数 | `--mode inject`（全部） |
-| `code-style` | `--mode inject --category code-style` |
+| 无参数 | `--mode inject --source both`（全部） |
+| `code-style` | `--mode inject --source both --category code-style` |
 | `--tier rule` | `--mode inject --tier rule` |
+| `--source reference` | `--mode inject --source reference` |
 | `--tier guideline code-style` | `--mode inject --tier guideline --category code-style` |
 
 ### Step 2: 调用 memory-loader 脚本
@@ -53,8 +58,11 @@
 **必须使用 Bash 工具**调用脚本：
 
 ```bash
-# 全部注入
-python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject
+# 全部注入（自己的 + 外部）
+python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject --source both
+
+# 仅外部经验
+python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject --source reference
 
 # 按层级过滤
 python ~/.claude/skills/mountainfish/scripts/memory-loader.py --mode inject --tier rule

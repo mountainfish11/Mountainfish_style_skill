@@ -5,6 +5,8 @@ Mountainfish profiler — 代码风格画像工具
 
 用法:
   python profiler.py <源码目录>                    # 单项目分析
+  python profiler.py <源码目录> --source own        # 自己的项目（默认）
+  python profiler.py <源码目录> --source reference  # 别人的项目
   python profiler.py <源码目录> --json             # JSON 输出
   python profiler.py <源码目录> --output report.md # 指定输出路径
   python profiler.py --compare a.md b.md           # 跨项目对比
@@ -154,6 +156,7 @@ class CategoryReport:
 class ProfileResult:
     directory: str
     timestamp: str
+    source: str              # own | reference
     files_scanned: int
     lines_scanned: int
     layer_summary: Dict[str, int]   # layer → file count
@@ -678,9 +681,11 @@ def compare_profiles(profile_paths: List[str]) -> dict:
 
 def print_terminal_report(result: ProfileResult) -> None:
     """打印终端人类可读报告"""
+    source_label = {"own": "自己的项目", "reference": "别人的项目"}.get(result.source, result.source)
     print("\n" + "=" * 64)
     print("  Mountainfish Profiling Report")
     print(f"  项目: {result.directory}")
+    print(f"  来源: {source_label}")
     print(f"  时间: {result.timestamp}")
     print("=" * 64)
 
@@ -724,12 +729,13 @@ def print_terminal_report(result: ProfileResult) -> None:
 
     # 建议的 integrate 命令
     print(f"\n── 建议的沉淀命令 ──")
+    source_flag = f"--source {result.source} "
     suggested = 0
     for cat in result.categories:
         if cat.detected and cat.frequency >= 3:
             main_pattern = cat.by_pattern.most_common(1)[0][0] if cat.by_pattern else ""
             desc = f"{result.directory}: {cat.category} 使用 '{main_pattern}' 模式（{cat.frequency} 处）"
-            print(f"  /mountainfish_integrate --type pattern --tier reference \\")
+            print(f"  /mountainfish_integrate {source_flag}--type pattern --tier reference \\")
             print(f"    \"{desc}\"")
             suggested += 1
     if suggested == 0:
@@ -744,6 +750,7 @@ def write_profile_file(result: ProfileResult, output_path: str) -> None:
     lines.append(f"# Mountainfish Profile: {result.directory}")
     lines.append("")
     lines.append(f"> 生成时间: {result.timestamp}")
+    lines.append(f"> 来源: {'自己的项目' if result.source == 'own' else '别人的项目'}")
     lines.append(f"> 文件: {result.files_scanned} 个 | 行数: {result.lines_scanned}")
     lines.append("")
     lines.append("## 项目分层")
@@ -794,6 +801,7 @@ def write_profile_file(result: ProfileResult, output_path: str) -> None:
     json_data = {
         "directory": result.directory,
         "timestamp": result.timestamp,
+        "source": result.source,
         "files_scanned": result.files_scanned,
         "lines_scanned": result.lines_scanned,
         "layer_summary": result.layer_summary,
@@ -877,6 +885,17 @@ def main():
 
     json_output = "--json" in sys.argv
 
+    # 解析 --source
+    source = "own"
+    for i, arg in enumerate(sys.argv):
+        if arg == "--source" and i + 1 < len(sys.argv):
+            val = sys.argv[i + 1]
+            if val in ("own", "reference"):
+                source = val
+            else:
+                print(f"[WARN] 未知 --source 值: {val}，使用默认值 'own'", file=sys.stderr)
+            break
+
     # --compare 模式
     if "--compare" in sys.argv:
         # 收集 compare 后面的所有 profile 文件路径
@@ -955,6 +974,7 @@ def main():
     result = ProfileResult(
         directory=str(dir_path.resolve()),
         timestamp=datetime.now().strftime("%Y-%m-%d"),
+        source=source,
         files_scanned=files_scanned,
         lines_scanned=lines_scanned,
         layer_summary=layer_summary,
@@ -967,6 +987,7 @@ def main():
         json_data = {
             "directory": result.directory,
             "timestamp": result.timestamp,
+            "source": result.source,
             "files_scanned": result.files_scanned,
             "lines_scanned": result.lines_scanned,
             "layer_summary": result.layer_summary,

@@ -11,6 +11,7 @@
     "lib/",
     "skills/mountainfish/SKILL.md",
     "skills/mountainfish/memory/",
+    "skills/mountainfish/reference/",
     "skills/mountainfish/scripts/*.py",
     "commands/",
     "README.md",

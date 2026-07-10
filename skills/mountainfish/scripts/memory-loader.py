@@ -6,12 +6,18 @@ Mountainfish memory-loader — 记忆库分层加载脚本
 用法:
   # start 模式：铁律全文 + 指南摘要 + 参考索引
   python memory-loader.py --mode start
+  python memory-loader.py --mode start --source both    # 同时加载 memory + reference
 
   # inject 模式：按条件过滤条目
   python memory-loader.py --mode inject
   python memory-loader.py --mode inject --tier rule
   python memory-loader.py --mode inject --tier guideline --category patterns
   python memory-loader.py --mode inject --tags "C,嵌入式"
+
+  # 指定来源
+  python memory-loader.py --mode start --source memory     # 仅自己的经验（默认）
+  python memory-loader.py --mode start --source reference  # 仅外部经验
+  python memory-loader.py --mode start --source both       # 同时加载
 
   # 指定记忆库目录
   python memory-loader.py --mode start --memory-dir <path>
@@ -48,11 +54,12 @@ class MemoryEntry:
     last_used: Optional[str]  # 最后使用日期
     principle: str = ""     # 指南原则（一行摘要）
     body: str = ""          # 条目正文
+    source: str = "memory"  # memory | reference — 经验来源
 
 
 # ── 解析器 ────────────────────────────────────────────────────────
 
-def parse_memory_file(filepath: str) -> List[MemoryEntry]:
+def parse_memory_file(filepath: str, source: str = "memory") -> List[MemoryEntry]:
     """解析单个记忆库文件，提取所有带 D8 元数据的条目"""
     entries = []
     try:
@@ -81,7 +88,7 @@ def parse_memory_file(filepath: str) -> List[MemoryEntry]:
             if in_entry and entry_lines:
                 entry = _build_entry(
                     filepath, current_section or "reference",
-                    entry_lines, metadata
+                    entry_lines, metadata, source
                 )
                 if entry:
                     entries.append(entry)
@@ -111,7 +118,7 @@ def parse_memory_file(filepath: str) -> List[MemoryEntry]:
     if in_entry and entry_lines:
         entry = _build_entry(
             filepath, current_section or "reference",
-            entry_lines, metadata
+            entry_lines, metadata, source
         )
         if entry:
             entries.append(entry)
@@ -120,7 +127,8 @@ def parse_memory_file(filepath: str) -> List[MemoryEntry]:
 
 
 def _build_entry(filepath: str, section_tier: str,
-                 lines: List[str], metadata: Dict[str, str]) -> Optional[MemoryEntry]:
+                 lines: List[str], metadata: Dict[str, str],
+                 source: str = "memory") -> Optional[MemoryEntry]:
     """从解析的行和元数据构建 MemoryEntry"""
     heading = lines[0].strip().lstrip("#").strip()
 
@@ -165,10 +173,11 @@ def _build_entry(filepath: str, section_tier: str,
         last_used=metadata.get("last-used"),
         principle=principle,
         body=body,
+        source=source,
     )
 
 
-def load_all_entries(memory_dir: str) -> List[MemoryEntry]:
+def load_all_entries(memory_dir: str, source: str = "memory") -> List[MemoryEntry]:
     """加载记忆库目录中的所有条目"""
     memory_dir = Path(memory_dir)
     if not memory_dir.exists():
@@ -178,7 +187,15 @@ def load_all_entries(memory_dir: str) -> List[MemoryEntry]:
     for md_file in sorted(memory_dir.glob("*.md")):
         if md_file.name == "index.md":
             continue
-        entries.extend(parse_memory_file(str(md_file)))
+        entries.extend(parse_memory_file(str(md_file), source))
+    return entries
+
+
+def load_entries_from_both(memory_dir: str, reference_dir: str) -> List[MemoryEntry]:
+    """同时加载 memory/ 和 reference/ 目录的条目"""
+    entries = []
+    entries.extend(load_all_entries(memory_dir, source="memory"))
+    entries.extend(load_all_entries(reference_dir, source="reference"))
     return entries
 
 
@@ -225,6 +242,13 @@ def format_start_output(entries: List[MemoryEntry], memory_dir: str) -> str:
     guidelines = [e for e in entries if e.tier == "guideline"]
     references = [e for e in entries if e.tier == "reference"]
 
+    # 按来源统计
+    mem_rules = [e for e in rules if e.source == "memory"]
+    ref_guidelines = [e for e in guidelines if e.source == "reference"]
+    mem_guidelines = [e for e in guidelines if e.source == "memory"]
+    ref_references = [e for e in references if e.source == "reference"]
+    mem_references = [e for e in references if e.source == "memory"]
+
     lines = []
     lines.append("=== Mountainfish 记忆加载 ===")
     lines.append("")
@@ -241,10 +265,10 @@ def format_start_output(entries: List[MemoryEntry], memory_dir: str) -> str:
         lines.append("（无铁律）")
         lines.append("")
 
-    # 指南摘要
-    lines.append("## 指南摘要（需要时可展开全文）")
-    if guidelines:
-        for e in guidelines:
+    # 指南摘要（自己的经验）
+    lines.append("## 指南摘要（自己的经验）")
+    if mem_guidelines:
+        for e in mem_guidelines:
             tag_str = " ".join(f"`#{t}`" for t in e.tags) if e.tags else ""
             principle_str = e.principle if e.principle else "(无原则描述)"
             lines.append(f"- **{e.heading}**: {principle_str}  {tag_str}")
@@ -252,18 +276,38 @@ def format_start_output(entries: List[MemoryEntry], memory_dir: str) -> str:
         lines.append("（无指南）")
     lines.append("")
 
-    # 参考索引
-    lines.append("## 参考索引（按需检索）")
-    if references:
-        for e in references:
+    # 指南摘要（外部经验）
+    if ref_guidelines:
+        lines.append("## 指南摘要（外部经验 [外部]）")
+        for e in ref_guidelines:
+            tag_str = " ".join(f"`#{t}`" for t in e.tags) if e.tags else ""
+            principle_str = e.principle if e.principle else "(无原则描述)"
+            lines.append(f"- [外部] **{e.heading}**: {principle_str}  {tag_str}")
+        lines.append("")
+
+    # 参考索引（自己的经验）
+    lines.append("## 参考索引（自己的经验）")
+    if mem_references:
+        for e in mem_references:
             tag_str = " ".join(f"`#{t}`" for t in e.tags) if e.tags else ""
             lines.append(f"- {e.heading}  {tag_str}")
     else:
         lines.append("（无参考）")
     lines.append("")
 
+    # 参考索引（外部经验）
+    if ref_references:
+        lines.append("## 参考索引（外部经验 [外部]）")
+        for e in ref_references:
+            tag_str = " ".join(f"`#{t}`" for t in e.tags) if e.tags else ""
+            lines.append(f"- [外部] {e.heading}  {tag_str}")
+        lines.append("")
+
     # 统计
+    total_mem = len(mem_rules) + len(mem_guidelines) + len(mem_references)
+    total_ref = len(ref_guidelines) + len(ref_references)
     lines.append(f"token 估算: 铁律 ~{len(rules) * 100} | 指南摘要 ~{len(guidelines) * 30} | 参考索引 ~{len(references) * 15}")
+    lines.append(f"来源: 自己的经验 {total_mem} 条 | 外部经验 {total_ref} 条")
 
     return "\n".join(lines)
 
@@ -281,7 +325,8 @@ def format_inject_output(entries: List[MemoryEntry]) -> str:
     if rules:
         lines.append(f"🔴 铁律（{len(rules)} 条，无条件遵循）：")
         for e in rules:
-            lines.append(f"- {e.heading}")
+            src_tag = " [外部]" if e.source == "reference" else ""
+            lines.append(f"-{src_tag} {e.heading}")
             if e.body:
                 # 截取前 200 字符
                 body_preview = e.body[:200]
@@ -295,14 +340,16 @@ def format_inject_output(entries: List[MemoryEntry]) -> str:
         for e in guidelines:
             tag_str = " ".join(f"`#{t}`" for t in e.tags) if e.tags else ""
             principle_str = e.principle if e.principle else "(无原则描述)"
-            lines.append(f"- **{e.heading}**: {principle_str}  {tag_str}")
+            src_tag = " [外部]" if e.source == "reference" else ""
+            lines.append(f"-{src_tag} **{e.heading}**: {principle_str}  {tag_str}")
         lines.append("")
 
     if references:
         lines.append(f"🟢 参考（{len(references)} 条）：")
         for e in references:
             tag_str = " ".join(f"`#{t}`" for t in e.tags) if e.tags else ""
-            lines.append(f"- {e.heading}  {tag_str}")
+            src_tag = " [外部]" if e.source == "reference" else ""
+            lines.append(f"-{src_tag} {e.heading}  {tag_str}")
         lines.append("")
 
     if not entries:
@@ -317,6 +364,8 @@ def to_json(entries: List[MemoryEntry], mode: str, memory_dir: str) -> dict:
         rules = [e for e in entries if e.tier == "rule"]
         guidelines = [e for e in entries if e.tier == "guideline"]
         references = [e for e in entries if e.tier == "reference"]
+        mem_entries = [e for e in entries if e.source == "memory"]
+        ref_entries = [e for e in entries if e.source == "reference"]
         return {
             "mode": "start",
             "memory_dir": memory_dir,
@@ -325,14 +374,16 @@ def to_json(entries: List[MemoryEntry], mode: str, memory_dir: str) -> dict:
                 "guidelines": len(guidelines),
                 "references": len(references),
                 "total": len(entries),
+                "from_memory": len(mem_entries),
+                "from_reference": len(ref_entries),
             },
             "rules": [asdict(e) for e in rules],
             "guidelines": [
-                {"heading": e.heading, "principle": e.principle, "tags": e.tags}
+                {"heading": e.heading, "principle": e.principle, "tags": e.tags, "source": e.source}
                 for e in guidelines
             ],
             "references": [
-                {"heading": e.heading, "tags": e.tags}
+                {"heading": e.heading, "tags": e.tags, "source": e.source}
                 for e in references
             ],
         }
@@ -355,6 +406,13 @@ def get_default_memory_dir() -> str:
     return str(memory_dir)
 
 
+def get_reference_dir() -> str:
+    """获取外部经验目录"""
+    script_dir = Path(__file__).resolve().parent
+    ref_dir = script_dir.parent / "reference"
+    return str(ref_dir)
+
+
 def _setup_encoding():
     if sys.platform == "win32":
         try:
@@ -374,6 +432,7 @@ def main():
     mode = "start"
     json_output = "--json" in sys.argv
     memory_dir = get_default_memory_dir()
+    source = "memory"
     tier = None
     category = None
     tags = None
@@ -383,6 +442,8 @@ def main():
             mode = sys.argv[i + 1]
         elif arg == "--memory-dir" and i + 1 < len(sys.argv):
             memory_dir = sys.argv[i + 1]
+        elif arg == "--source" and i + 1 < len(sys.argv):
+            source = sys.argv[i + 1]
         elif arg == "--tier" and i + 1 < len(sys.argv):
             tier = sys.argv[i + 1]
         elif arg == "--category" and i + 1 < len(sys.argv):
@@ -394,8 +455,28 @@ def main():
         print(f"[ERROR] 未知模式: {mode}，支持 start / inject", file=sys.stderr)
         sys.exit(2)
 
+    if source not in ("memory", "reference", "both"):
+        print(f"[ERROR] 未知 --source: {source}，支持 memory / reference / both", file=sys.stderr)
+        sys.exit(2)
+
     # 加载条目
-    entries = load_all_entries(memory_dir)
+    if source == "both":
+        reference_dir = get_reference_dir()
+        if mode == "start":
+            entries = load_entries_from_both(memory_dir, reference_dir)
+        else:
+            # inject 模式 + both: 从两个目录加载然后过滤
+            entries = load_entries_from_both(memory_dir, reference_dir)
+            entries = filter_entries(entries, tier=tier, category=category, tags=tags)
+            # 已过滤，跳过后续过滤
+            tier = None
+            category = None
+            tags = None
+    elif source == "reference":
+        reference_dir = get_reference_dir()
+        entries = load_all_entries(reference_dir, source="reference")
+    else:
+        entries = load_all_entries(memory_dir, source="memory")
 
     if not entries:
         print(f"[WARN] 记忆库为空: {memory_dir}", file=sys.stderr)

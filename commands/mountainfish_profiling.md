@@ -27,13 +27,31 @@
 > **核心原则**：正则分析由 Python 脚本完成，Claude 仅负责解读结果和生成报告。
 > 这将 token 消耗从 O(文件数×模式数) 降低到 O(1)。
 
+### Step 0: 询问经验来源（v2.2 新增）
+
+在开始分析前，**必须先询问用户**：
+
+```
+这是你自己的项目还是别人的项目？
+
+1. **自己的项目** — 经验沉淀到 memory/（可升级为铁律/指南/参考）
+2. **别人的项目** — 经验沉淀到 reference/（最高层级为指南）
+```
+
+根据用户回答：
+- 选择 1 → `--source own`（默认）
+- 选择 2 → `--source reference`
+
 ### Step 1: 调用 profiler 脚本
 
 **必须使用 Bash 工具**调用脚本，不要手动读取源文件做分析：
 
 ```bash
-# 单项目分析 — JSON 输出到临时文件
-python ~/.claude/skills/mountainfish/scripts/profiler.py <源码目录> --json > /tmp/mf-profile.json
+# 单项目分析 — JSON 输出到临时文件（自己的项目）
+python ~/.claude/skills/mountainfish/scripts/profiler.py <源码目录> --source own --json > /tmp/mf-profile.json
+
+# 单项目分析 — 别人的项目
+python ~/.claude/skills/mountainfish/scripts/profiler.py <源码目录> --source reference --json > /tmp/mf-profile.json
 
 # 跨项目对比
 python ~/.claude/skills/mountainfish/scripts/profiler.py --compare <profile1.md> <profile2.md> --json > /tmp/mf-compare.json

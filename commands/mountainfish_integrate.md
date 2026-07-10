@@ -24,6 +24,10 @@
 /mountainfish_integrate --type convention --tier guideline \
   "所有外设驱动统一用 BSP 层封装"
 
+# 指定来源（v2.2 新增）
+/mountainfish_integrate --source reference --type pattern --tier guideline \
+  "从 XXX 项目学到: 环形缓冲区统一使用 power-of-2 大小"
+
 # 记忆健康检查（v2.0 新增）
 /mountainfish_integrate --health                  # 快速健康检查
 /mountainfish_integrate --health --full            # 全面审计
@@ -45,6 +49,15 @@
 - `--type ...` → 跳转到 Step P（精确沉淀）
 - 传入 `.mountainfish-profile.md` → 跳转到 Step F（消费画像文件）
 - 其他 → 进入 Step 1（传统模式）
+
+**--source 参数**（v2.2 新增）：
+
+| 值 | 写入目录 | 最高层级 |
+|----|----------|----------|
+| `memory`（默认） | `memory/` | 铁律 |
+| `reference` | `reference/` | 指南 |
+
+> 当 `--source reference` 时，即使指定 `--tier rule`，也会自动降级为 `guideline`。
 
 ---
 
@@ -99,13 +112,15 @@
 
 ```
 /mountainfish_integrate --type <type> --tier <tier> "<一句话描述>"
+/mountainfish_integrate --source reference --type <type> --tier <tier> "<一句话描述>"
 ```
 
-1. 解析参数：类型 + 层级 + 描述
-2. AI 根据描述展开：规则/原则/场景 + 代码示例（如果可用）
-3. 反污染自检（同上）
-4. 用户确认 → 写入对应记忆库文件的对应层级段落
-5. 更新 index.md 分层统计
+1. 解析参数：来源 + 类型 + 层级 + 描述
+2. 若 `--source reference` 且 `--tier rule` → 自动降级为 `guideline`，提示用户
+3. AI 根据描述展开：规则/原则/场景 + 代码示例（如果可用）
+4. 反污染自检（同上）
+5. 用户确认 → 写入对应目录（memory/ 或 reference/）的对应层级段落
+6. 更新对应 index.md 分层统计
 
 ---
 
@@ -216,6 +231,7 @@ Claude 负责解读 JSON/终端输出并生成人类可读报告。
 ```
 === Mountainfish Integrate 完成 ===
 
+📂 目标：memory/（自己的经验）| reference/（外部经验）
 📄 扫描文件：X 个
 📝 提取经验：Y 条
 

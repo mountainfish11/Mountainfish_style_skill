@@ -46,26 +46,39 @@ version: 2.1.2
 
 **原则**：不要手动读源文件或记忆库文件做分析，必须通过对应脚本处理。
 
-## 记忆库结构（v2.0 三级分层）
+## 记忆库结构（v2.2 三级分层 + 来源分离）
 
 ```
-.claude/skills/mountainfish/memory/
-├── index.md              # 分层索引和统计
-├── code-style.md         # 铁律 / 指南 / 参考
-├── patterns.md           # 铁律 / 指南 / 参考
-├── anti-patterns.md      # 铁律 / 指南 / 参考
-├── tech-stack.md         # 铁律 / 指南 / 参考
-├── project-structure.md  # 铁律 / 指南 / 参考
-└── conventions.md        # 铁律 / 指南 / 参考
+.claude/skills/mountainfish/
+├── memory/                 # 自己的代码经验
+│   ├── index.md              # 分层索引和统计
+│   ├── code-style.md         # 铁律 / 指南 / 参考
+│   ├── patterns.md           # 铁律 / 指南 / 参考
+│   ├── anti-patterns.md      # 铁律 / 指南 / 参考
+│   ├── tech-stack.md         # 铁律 / 指南 / 参考
+│   ├── project-structure.md  # 铁律 / 指南 / 参考
+│   └── conventions.md        # 铁律 / 指南 / 参考
+├── reference/              # 外部代码经验（v2.2 新增）
+│   ├── index.md              # 分层索引和统计
+│   ├── code-style.md         # 指南 / 参考（无铁律）
+│   ├── patterns.md           # 指南 / 参考（无铁律）
+│   ├── anti-patterns.md      # 指南 / 参考（无铁律）
+│   ├── tech-stack.md         # 指南 / 参考（无铁律）
+│   ├── project-structure.md  # 指南 / 参考（无铁律）
+│   └── conventions.md        # 指南 / 参考（无铁律）
+└── scripts/                # Python 分析脚本
 ```
 
 ### 三级分层
 
-| 层级 | 数量上限 | 注入时机 | token 预算 |
-|------|----------|----------|------------|
-| 铁律 Rules | ≤5 | 每次对话无条件注入 | ~500 |
-| 指南 Guidelines | ≤20 | 会话启动注入摘要，需要时展开 | ~800 |
-| 参考 Reference | 无上限 | 标签/关键词匹配，Top-K(≤5) | ~1500 |
+| 层级 | 数量上限 | 注入时机 | token 预算 | memory/ | reference/ |
+|------|----------|----------|------------|---------|------------|
+| 铁律 Rules | ≤5 | 每次对话无条件注入 | ~500 | ✅ | ❌ 不支持 |
+| 指南 Guidelines | ≤20 | 会话启动注入摘要，需要时展开 | ~800 | ✅ | ✅ |
+| 参考 Reference | 无上限 | 标签/关键词匹配，Top-K(≤5) | ~1500 | ✅ | ✅ |
+
+> **来源区分**: memory/ 条目来源标记为 `[自]`，reference/ 条目标记为 `[外部]`。
+> reference/ 中即使指定 `tier: rule` 也会自动降级为 `guideline`。
 
 ---
 
@@ -85,9 +98,10 @@ version: 2.1.2
 读取以下内容：
 
 ```
-~/.claude/skills/mountainfish/memory/index.md          # 分层索引
-各 memory/*.md 中 ## 铁律 部分                           # 全部铁律（≤5 条，~500 token）
-各 memory/*.md 中 ## 指南 部分的标题+原则行               # 摘要列表（~800 token）
+~/.claude/skills/mountainfish/memory/index.md              # 分层索引
+~/.claude/skills/mountainfish/reference/index.md           # 外部经验索引
+各 memory/*.md 中 ## 铁律 部分                               # 全部铁律（≤5 条，~500 token）
+各 memory/*.md + reference/*.md 中 ## 指南 部分的标题+原则行   # 摘要列表（~800 token），外部标注 [外部]
 ```
 
 注入后设置会话标记：`[Mountainfish: loaded]`
@@ -125,7 +139,7 @@ version: 2.1.2
 在本次对话的后续代码生成中，自动遵循注入的经验。如检测到多源冲突（Mountainfish vs Trellis vs CLAUDE.md vs 用户指令），按以下优先级裁决：
 
 ```
-用户当场指令 > Mountainfish 铁律 > Trellis spec > Mountainfish 指南 > CLAUDE.md
+用户当场指令 > Mountainfish 铁律 > Trellis spec > Mountainfish 指南 > Mountainfish 外部经验 > CLAUDE.md
 ```
 
 检测到冲突时主动报告：
@@ -134,6 +148,25 @@ version: 2.1.2
 ⚠️ 规范冲突: [来源A] 要求 X，[来源B] 要求 Y。
    按优先级使用 [来源A]。是否将 Y 加入抑制列表？
 ```
+
+### Step 5: 代码经验标注（v2.2 新增）
+
+生成代码时，如使用了 memory/ 或 reference/ 中的经验，**在代码旁添加简短注释**，让用户知道哪些代码受经验影响：
+
+```c
+/* 💡 经验: [自] — 参数传递优于全局变量 */
+void mpu6050_task(mpu6050_context_t *data) {
+    mpu6050_get_raw_acce(data->sensor, &data->curr_acce);
+}
+
+/* 💡 经验: [外] — 环形缓冲区使用 power-of-2 大小 */
+#define RING_BUF_SIZE 256
+```
+
+标注格式：
+- `[自]` = 来自 memory/（自己的经验）
+- `[外]` = 来自 reference/（外部代码经验）
+- 仅在**关键位置**标注（如函数签名、重要宏定义、架构级决策），不逐行标注
 
 ---
 
@@ -159,11 +192,11 @@ version: 2.1.2
 
 ```
 1. 平时写 .md 总结编码经验
-2. /mountainfish_integrate → 沉淀到记忆库（带类型+层级分类）
-3. /mountainfish_start → 会话启动时加载分层记忆
-4. 讨论代码话题 → 自动按需检索注入
-5. /mountainfish_profiling → 分析项目风格，提取惯用写法画像
-6. 代码生成后 → 任务后钩子扫描违规
+2. /mountainfish_integrate → 沉淀到记忆库（带类型+层级+来源分类）
+3. /mountainfish_start → 会话启动时加载分层记忆（自己的 + 外部经验）
+4. 讨论代码话题 → 自动按需检索注入（含外部经验）
+5. /mountainfish_profiling → 分析项目风格（询问自己的/别人的），提取惯用写法画像
+6. 代码生成后 → 任务后钩子扫描违规 + 经验标注
 ```
 
 ## 注意事项
@@ -173,3 +206,5 @@ version: 2.1.2
 - 建议定期运行 `/mountainfish_integrate --health` 检查记忆健康
 - 自动注入在同一会话内首次触发时执行全量加载，后续仅按需检索
 - 上下文预算总计 ≤ 2800 token
+- **v2.2**: reference/ 存放外部代码经验，最高层级为指南，不可升级为铁律
+- **v2.2**: 代码生成时如使用了经验，添加 `/* 💡 经验: [自]/[外] — 描述 */` 注释标注
